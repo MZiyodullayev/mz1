@@ -10,11 +10,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = env("SECRET_KEY")
 
-DEBUG = env("DEBUG")
-if DEBUG == "False":
-    DEBUG = False
-else:
-    DEBUG = True
+DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS").split(",")
 
@@ -31,10 +27,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'django_q',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -119,11 +117,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "users.User"
 
-CORS_ALLOWED_ORIGINS = [o.strip() for o in env("CORS_ALLOWED_ORIGINS").split(",")]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS").split(",")]
+CORS_ALLOWED_ORIGINS = [o.strip() for o in env("CORS_ALLOWED_ORIGINS").split(",") if o.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS").split(",") if o.strip()]
 
 if not DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
+    # NOTE: intentionally NOT setting CORS_ALLOW_ALL_ORIGINS here — it would
+    # silently override CORS_ALLOWED_ORIGINS above. Add every real origin
+    # (web app, phone app dev server, etc.) to CORS_ALLOWED_ORIGINS in .env
+    # instead of allowing every origin in production.
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SAMESITE = "None"

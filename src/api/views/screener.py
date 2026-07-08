@@ -2,7 +2,7 @@ import logging
 
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -24,7 +24,7 @@ class ScreenshotUploadView(APIView):
     Принимает один или несколько файлов, сохраняет и ставит задачу на анализ.
     """
     parser_classes = [MultiPartParser]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         images = request.FILES.getlist("images")
@@ -67,7 +67,7 @@ class ScreenshotViewSet(ReadOnlyModelViewSet):
     queryset = Screenshot.objects.select_related("result").all()
     serializer_class = ScreenshotSerializer
     pagination_class = MyCustomPaginator
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
 
 class WhitelistViewSet(ReadOnlyModelViewSet):
