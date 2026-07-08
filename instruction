@@ -3,16 +3,24 @@ mirik:
 move to the GitBash terminal and follow the instructions below:
 
 
-python -m vemv vemv                  # create virtual environment why we should use virtual environment? to avoid conflicts between dependencies of different projects and to keep our project isolated from the global Python environment.
-source venv/Scripts/activate         # activate virtual environment
+python -m venv venv                  # create virtual environment why we should use virtual environment? to avoid conflicts between dependencies of different projects and to keep our project isolated from the global Python environment.
+source venv/Scripts/activate         # activate virtual environment (Windows Git Bash). On Mac/Linux use: source venv/bin/activate
 
 pip install -r requirements.txt      # install dependencies/packages
 cd src                               # enter the src folder
+cp .env.example .env                 # copy the example env file and fill in real values (SECRET_KEY, GROQ_API_KEY, TELEGRAM_BOT_TOKEN, ...)
 
 python manage.py makemigrations      # create migration files for database changes
 python manage.py migrate             # apply the migrations to the database
-python manage.py createsuperusers    # create a superuser for admin access
-python manage.py runserver           # start the development server
+python manage.py createsuperuser     # create a superuser for admin access
+python manage.py runserver           # start the development server (localhost only)
+
+# To reach the server from your PHONE (same Wi-Fi as your computer):
+# 1. Find your computer's LAN IP: `ipconfig` (Windows) or `ifconfig`/`ip a` (Mac/Linux) — look for something like 192.168.x.x
+# 2. Add that IP to ALLOWED_HOSTS / CORS_ALLOWED_ORIGINS / CSRF_TRUSTED_ORIGINS in your .env
+# 3. Run the server bound to all interfaces, not just localhost:
+python manage.py runserver 0.0.0.0:8000
+# 4. On your phone's browser/app, open: http://<your-computer-LAN-IP>:8000/
 
 git branch -M [name]                 # rename the current branch to [name]
 
