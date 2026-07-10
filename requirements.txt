@@ -9,6 +9,15 @@ PyJWT==2.11.0
 sqlparse==0.5.3
 asgiref==3.11.1
 
+# Postgres driver (used when DATABASE_URL is set, e.g. on Render)
+psycopg2-binary==2.9.10
+
+# Production WSGI server (replaces manage.py runserver in prod)
+gunicorn==23.0.0
+
+# Serves static files (admin CSS, DRF browsable API) without needing nginx
+whitenoise==6.11.0
+
 # Очередь задач (вместо Celery + Redis)
 django-q2==1.7.3
 

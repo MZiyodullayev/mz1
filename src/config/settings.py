@@ -32,6 +32,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,11 +63,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db(
+        'DATABASE_URL',
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+    )
 }
+DATABASES['default']['CONN_MAX_AGE'] = 60
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -110,6 +112,12 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 if DEBUG:
     STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -130,6 +138,14 @@ if not DEBUG:
     CSRF_COOKIE_SAMESITE = "None"
     SESSION_COOKIE_SAMESITE = "None"
 
+    # Render (and most PaaS) terminate TLS at their edge and forward plain
+    # HTTP internally, adding this header so Django knows the original
+    # request was HTTPS.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7  # 1 week; raise once confirmed stable
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
 # --- Django Q2 (очередь задач без Redis) ---
 Q_CLUSTER = {
     "name": "screener",
@@ -138,7 +154,7 @@ Q_CLUSTER = {
     "retry": 180,
     "queue_limit": 50,
     "bulk": 10,
-    "orm": "default",   # хранит очередь в SQLite
+    "orm": "default",   # хранит очередь в той же БД, что и DATABASES['default']
 }
 
 # --- Screener app ---
