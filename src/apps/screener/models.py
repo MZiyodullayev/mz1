@@ -1,4 +1,11 @@
+import uuid
+
 from django.db import models
+
+
+def screenshot_upload_path(instance, filename):
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "png"
+    return f"screenshots/{uuid.uuid4().hex}.{ext}"
 
 
 class WhitelistUser(models.Model):
@@ -23,7 +30,7 @@ class Screenshot(models.Model):
         ("error", "Error"),
     ]
 
-    image = models.ImageField(upload_to="screenshots/")
+    image = models.ImageField(upload_to=screenshot_upload_path)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
