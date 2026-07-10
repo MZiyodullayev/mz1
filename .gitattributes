@@ -1,0 +1,11 @@
+# Normalize line endings to LF in the repo regardless of OS.
+# Prevents Windows CRLF warnings and keeps scripts/configs consistent
+# with the Linux environment this project deploys to (Render).
+* text=auto eol=lf
+
+# Binary files - don't touch line endings at all
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.sqlite3 binary

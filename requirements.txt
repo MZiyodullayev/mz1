@@ -9,7 +9,11 @@ PyJWT==2.11.0
 sqlparse==0.5.3
 asgiref==3.11.1
 
-# Postgres driver (used when DATABASE_URL is set, e.g. on Render)
+# Postgres driver (used when DATABASE_URL is set, e.g. on Render/Neon).
+# Using psycopg (v3) instead of psycopg2-binary: psycopg2-binary has no
+# prebuilt wheels yet for newer Python versions (e.g. 3.14), which makes
+# pip fall back to building from source and fail with "pg_config not
+# found". Django 4.2+ supports psycopg3 with the same postgresql ENGINE.
 psycopg[binary]==3.2.10
 
 # Production WSGI server (replaces manage.py runserver in prod)
