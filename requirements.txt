@@ -10,7 +10,7 @@ sqlparse==0.5.3
 asgiref==3.11.1
 
 # Postgres driver (used when DATABASE_URL is set, e.g. on Render)
-psycopg2-binary==2.9.10
+psycopg[binary]==3.2.10
 
 # Production WSGI server (replaces manage.py runserver in prod)
 gunicorn==23.0.0
