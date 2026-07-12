@@ -161,3 +161,10 @@ Q_CLUSTER = {
 GROQ_API_KEY = env("GROQ_API_KEY")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN")
 WATCH_FOLDER = env("WATCH_FOLDER", default="")
+
+# Used by apps/screener/tasks.py to fetch a screenshot's image over HTTP
+# when the worker (qcluster) runs on a different machine than the web
+# service that received the upload (e.g. worker on your PC, web on
+# Render) — the file simply isn't on the worker's local disk in that
+# case. Set to your Render URL, e.g. https://mz1.onrender.com
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="")

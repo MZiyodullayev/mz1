@@ -8,8 +8,38 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def _call_groq(image_paths: list) -> str:
-    """Отправляет изображения в Groq API и возвращает текстовый ответ."""
+def _get_image_bytes(screenshot) -> bytes:
+    """
+    Достаёт байты картинки. Работает в двух сценариях:
+    1. Воркер и веб на одной машине (обычная локальная разработка) —
+       файл реально лежит на диске, читаем его напрямую.
+    2. Воркер работает отдельно (например, у тебя на компе), а веб —
+       на Render: файла на диске воркера нет, скачиваем его по
+       публичному URL (Render теперь отдаёт /media/ всегда, см. urls.py).
+    """
+    try:
+        local_path = screenshot.image.path
+        if os.path.exists(local_path):
+            with open(local_path, "rb") as f:
+                return f.read()
+    except NotImplementedError:
+        pass  # remote storage backends (e.g. S3) don't support .path
+
+    base_url = settings.PUBLIC_BASE_URL.rstrip("/")
+    if not base_url:
+        raise RuntimeError(
+            "Image not found locally and PUBLIC_BASE_URL is not set — "
+            "can't fetch it remotely. Set PUBLIC_BASE_URL in .env to your "
+            "Render URL (e.g. https://mz1.onrender.com)."
+        )
+    image_url = f"{base_url}{screenshot.image.url}"
+    resp = requests.get(image_url, timeout=30)
+    resp.raise_for_status()
+    return resp.content
+
+
+def _call_groq(images: list) -> str:
+    """Отправляет изображения (bytes) в Groq API и возвращает текстовый ответ."""
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
@@ -27,15 +57,14 @@ def _call_groq(image_paths: list) -> str:
         {"type": "text", "text": "Solve the task from these images. Give only the answer."}
     ]
 
-    for path in image_paths:
-        with open(path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-            content_parts.append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-                }
-            )
+    for image_bytes in images:
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        content_parts.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+            }
+        )
 
     payload = {
         "model": "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -95,20 +124,25 @@ def analyze_screenshots(screenshot_ids: list) -> None:
 
     screenshots.update(status="processing")
 
-    image_paths = []
+    images = []
     for s in screenshots:
-        abs_path = s.image.path
-        if os.path.exists(abs_path):
-            image_paths.append(abs_path)
+        try:
+            images.append(_get_image_bytes(s))
+        except Exception as e:
+            logger.error("Could not fetch image for screenshot %s: %s", s.pk, e)
 
-    if not image_paths:
+    if not images:
         screenshots.update(status="error")
+        _broadcast_telegram(
+            "❌ Не удалось получить файл(ы) скриншота "
+            "(проверь PUBLIC_BASE_URL в .env воркера)."
+        )
         return
 
     try:
-        _broadcast_telegram(f"📸 Получил {len(image_paths)} скриншот(а). Анализирую...")
+        _broadcast_telegram(f"📸 Получил {len(images)} скриншот(а). Анализирую...")
 
-        answer = _call_groq(image_paths)
+        answer = _call_groq(images)
 
         primary = screenshots.first()
         AnalysisResult.objects.update_or_create(
